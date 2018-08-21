@@ -12,11 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.package utils
 
-// Testing code which invokes os/exec is a little tricky (you need to set up
-// the os/exec testing framework for unit tests). We do this in numerous other
-// tests. This test exists as a very simplistic bare bones test of code that
-// sets up testing framework for os/exec calls.
-
 package main
 
 import (
@@ -27,15 +22,21 @@ import (
 	"testing"
 )
 
+// Testing code which invokes os/exec is a little tricky (you need to set up
+// the os/exec testing framework for unit tests). We do this in numerous other
+// tests. This test exists as a very simplistic bare bones test of code that
+// sets up testing framework for os/exec calls.
+
 // Set up arguments for testing of os/exec calls
 func fakeExecCommand(command string, args...string) *exec.Cmd {
-	cs := []string{"-test.run=TestHelperProcess", "--", command}
+	cs := []string{"-test.run=TestExecutorHelperProcess", "--", command}
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
 	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
 	return cmd
 }
 
+// Simple test to just pick up and verify expected output
 func TestRunExecutor(t *testing.T) {
 	// Handling when processing output from generic "duplicacy" command
 	outputArray := []string {}
@@ -53,7 +54,8 @@ func TestRunExecutor(t *testing.T) {
 	if actualOutput != expectedOutput { t.Errorf("result was incorrect, got '%s', expected '%s'.", actualOutput, expectedOutput) }
 }
 
-func TestHelperProcess(t *testing.T){
+// TestExecutorHelperProcess isn't a real test; it's a helper process for TestRunExecutor*
+func TestExecutorHelperProcess(t *testing.T){
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}

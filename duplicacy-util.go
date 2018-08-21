@@ -80,6 +80,9 @@ var (
 
 	// Create configuration object to load configuration file
 	configFile *ConfigFile = NewConfigFile()
+
+	// Display time in local output messages?
+	loggingSystemDisplayTime bool = true
 )
 
 func init() {
@@ -108,10 +111,13 @@ func logFMessage(w io.Writer, logger *log.Logger, message string) {
 	}
 
 	text := fmt.Sprint(time.Now().Format("15:04:05"), " ", message)
+	if loggingSystemDisplayTime == false {
+		text = message
+	}
 	mailBody = append(mailBody, text)
 
 	if !quietFlag {
-		if w == os.Stdout {
+		if w == os.Stdout && loggingSystemDisplayTime == true {
 			fmt.Fprintln(w, text)
 		} else {
 			// Fatal message shouldn't have time prefix

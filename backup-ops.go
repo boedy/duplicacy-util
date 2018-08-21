@@ -46,21 +46,21 @@ func performBackup() error {
 
 	// Perform "duplicacy backup" if required
 	if cmdBackup {
-		if err := performDuplicacyBackup(logger); err != nil {
+		if err := performDuplicacyBackup(logger, []string {}); err != nil {
 			return err
 		}
 	}
 
 	// Perform "duplicacy prune" if required
 	if cmdPrune {
-		if err := performDuplicacyPrune(logger); err != nil {
+		if err := performDuplicacyPrune(logger, []string {}); err != nil {
 			return err
 		}
 	}
 
 	// Perform "duplicacy check" if required
 	if cmdCheck {
-		if err := performDuplicacyCheck(logger); err != nil {
+		if err := performDuplicacyCheck(logger, []string {}); err != nil {
 			return err
 		}
 	}
@@ -73,7 +73,7 @@ func performBackup() error {
 	return nil
 }
 
-func performDuplicacyBackup(logger *log.Logger) error {
+func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 	// Handling when processing output from "duplicacy backup" command
 	var backupEntry backupRevision
 	var copyEntry copyRevision
@@ -147,7 +147,8 @@ func performDuplicacyBackup(logger *log.Logger) error {
 	for _, backupInfo := range configFile.backupInfo {
 		backupStartTime := time.Now()
 		logger.Println("######################################################################")
-		cmdArgs := []string{"backup", "-storage", backupInfo["name"], "-threads", backupInfo["threads"], "-stats"}
+		cmdArgs := testArgs
+		cmdArgs = append(cmdArgs, "backup", "-storage", backupInfo["name"], "-threads", backupInfo["threads"], "-stats")
 		vssFlags := ""
 		if backupInfo["vss"] == "true" {
 			cmdArgs = append(cmdArgs, "-vss")
@@ -182,8 +183,9 @@ func performDuplicacyBackup(logger *log.Logger) error {
 		for _, copyInfo := range configFile.copyInfo {
 			copyStartTime := time.Now()
 			logger.Println("######################################################################")
-			cmdArgs := []string{"copy", "-threads", copyInfo["threads"],
-				"-from", copyInfo["from"], "-to", copyInfo["to"]}
+			cmdArgs := testArgs
+			cmdArgs = append(cmdArgs, "copy", "-threads", copyInfo["threads"],
+				"-from", copyInfo["from"], "-to", copyInfo["to"])
 			logMessage(logger, fmt.Sprint("Copying from storage ", copyInfo["from"],
 				" to storage ", copyInfo["to"], " with ", copyInfo["threads"], " threads"))
 			if debugFlag {
@@ -208,14 +210,15 @@ func performDuplicacyBackup(logger *log.Logger) error {
 	return nil
 }
 
-func performDuplicacyPrune(logger *log.Logger) error {
+func performDuplicacyPrune(logger *log.Logger, testArgs []string) error {
 	// Handling when processing output from generic "duplicacy" command
 	anon := func(s string) { logger.Println(s) }
 
 	// Perform prune operations
 	for _, pruneInfo := range configFile.pruneInfo {
 		logger.Println("######################################################################")
-		cmdArgs := []string{"prune", "-all", "-storage", pruneInfo["storage"]}
+		cmdArgs := testArgs
+		cmdArgs = append(testArgs, "prune", "-all", "-storage", pruneInfo["storage"])
 		cmdArgs = append(cmdArgs, strings.Split(pruneInfo["keep"], " ")...)
 		logMessage(logger, fmt.Sprint("Pruning storage ", pruneInfo["storage"]))
 		if debugFlag {
@@ -231,7 +234,7 @@ func performDuplicacyPrune(logger *log.Logger) error {
 	return nil
 }
 
-func performDuplicacyCheck(logger *log.Logger) error {
+func performDuplicacyCheck(logger *log.Logger, testArgs []string) error {
 	// Handling when processing output from generic "duplicacy" command
 	anon := func(s string) { logger.Println(s) }
 
