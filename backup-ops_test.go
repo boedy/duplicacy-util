@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"bufio"
 )
 
 // Set up logging for test purposes
@@ -73,6 +74,25 @@ func TestRunDuplicacyBackup(t *testing.T) {
 	expectedOutput := "This is the expected\noutput\n"
 	actualOutput := strings.Join(mailBody, "\n") + "\n"
 	if actualOutput != expectedOutput { t.Errorf("result was incorrect, got '%s', expected '%s'.", actualOutput, expectedOutput) }
+}
+
+// Read a file, dumping to stdout. Helper function for TestBackupOpsHelperProcess
+func readFileToStdout(logFile string) error {
+	file, err := os.OpenFile(logFile, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		fmt.Print(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // TestBackupOpsHelperProcess isn't a real test; it's a helper process for TestRunDuplicacy*
