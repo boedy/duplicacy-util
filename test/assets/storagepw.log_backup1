@@ -1,0 +1,3 @@
+Storage set to b2://some/bucket
+Enter storage password:Failed to read the password: EOF
+Error executing command: exit status 100
