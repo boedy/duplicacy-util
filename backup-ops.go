@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"strconv"
 )
 
 func performBackup() error {
@@ -144,10 +145,18 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 	}
 
 	// Perform backup/copy operations
-	for _, backupInfo := range configFile.backupInfo {
+	for i, backupInfo := range configFile.backupInfo {
 		backupStartTime := time.Now()
 		logger.Println("######################################################################")
-		cmdArgs := testArgs
+
+		// Minor support for unit tests - distasteful but only reasonable option
+		cmdArgs := make([]string, len(testArgs))
+		copy(cmdArgs, testArgs)
+		if cmdArgs[0] == "testbackup" {
+			cmdArgs[1] = testArgs[1] + "_backup" + strconv.Itoa(i + 1)
+		}
+
+		// Build remainder of command arguments
 		cmdArgs = append(cmdArgs, "backup", "-storage", backupInfo["name"], "-threads", backupInfo["threads"], "-stats")
 		vssFlags := ""
 		if backupInfo["vss"] == "true" {
@@ -162,6 +171,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 		logMessage(logger, fmt.Sprint("Backing up to storage ", backupInfo["name"],
 			vssFlags, " with ", backupInfo["threads"], " threads"))
 
+		// Execute duplicacy
 		if debugFlag {
 			logMessage(logger, fmt.Sprint("Executing: ", duplicacyPath, cmdArgs))
 		}
@@ -180,10 +190,18 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 	}
 
 	if len(configFile.copyInfo) != 0 {
-		for _, copyInfo := range configFile.copyInfo {
+		for i, copyInfo := range configFile.copyInfo {
 			copyStartTime := time.Now()
 			logger.Println("######################################################################")
-			cmdArgs := testArgs
+
+			// Minor support for unit tests - distasteful but only reasonable option
+			cmdArgs := make([]string, len(testArgs))
+			copy(cmdArgs, testArgs)
+			if cmdArgs[0] == "testbackup" {
+				cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i + 1)
+			}
+
+			// Build remainder of command arguments
 			cmdArgs = append(cmdArgs, "copy", "-threads", copyInfo["threads"],
 				"-from", copyInfo["from"], "-to", copyInfo["to"])
 			logMessage(logger, fmt.Sprint("Copying from storage ", copyInfo["from"],
