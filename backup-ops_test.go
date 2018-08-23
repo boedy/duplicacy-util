@@ -15,14 +15,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"testing"
-	"bufio"
 )
 
 // Set up logging for test purposes
@@ -59,6 +60,7 @@ func TestRunDuplicacyBackup(t *testing.T) {
 	// Initialize data structures for test
 	configFile.backupInfo = []map[string]string {
 		{"name": "b2", "threads": "5", "vss": "false"},
+		{"name": "azure", "threads": "10", "vss": "false"},
 	}
 	configFile.copyInfo = nil
 	mailBody = nil
@@ -67,7 +69,7 @@ func TestRunDuplicacyBackup(t *testing.T) {
 	execCommand = fakeBackupOpsCommand
 	defer func(){ execCommand = exec.Command }()
 	if err := performDuplicacyBackup(logger, []string {"testbackup", "taltos.log"}); err != nil {
-		t.Errorf("Expected nil error, got %#v", err)
+		t.Errorf("expected nil error, got %#v", err)
 	}
 
 	// Check results of anon function
@@ -86,7 +88,7 @@ func readFileToStdout(logFile string) error {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		fmt.Print(scanner.Text())
+		fmt.Println(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		return err
@@ -125,7 +127,12 @@ func TestBackupOpsHelperProcess(t *testing.T){
 	case "testbackup":
 		backupFile := args[1]
 		args = args[2:]
+		backupFile = path.Join("test/assetss", backupFile)
 		fmt.Fprintf(os.Stdout, "Processing backup file: %q\n", backupFile)
+		if err := readFileToStdout(backupFile); err != nil {
+			fmt.Errorf("error opening assets file: %e\n", err)
+			os.Exit(1)
+		}
 
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown argument %q\n", args)
