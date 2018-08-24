@@ -40,7 +40,7 @@ func setupLogging() (*log.Logger, *os.File, error) {
 }
 
 // Set up arguments for testing of os/exec calls
-func fakeBackupOpsCommand(command string, args...string) *exec.Cmd {
+func fakeBackupOpsCommand(command string, args ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestBackupOpsHelperProcess", "--", command}
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
@@ -49,48 +49,115 @@ func fakeBackupOpsCommand(command string, args...string) *exec.Cmd {
 }
 
 func TestRunDuplicacyBackup(t *testing.T) {
-	// Set up logging infrastructure
-	logger, file, err := setupLogging()
-	if err != nil {
-		t.Errorf("unexpected error creating log file, got %#v", err)
-	}
-	loggingSystemDisplayTime = false
-	quietFlag = true
-	defer func() {
-		file.Close()
-		os.Remove(file.Name())	// For debugging, might need to leave log file around for perusal
-
-		loggingSystemDisplayTime = true
-		quietFlag = false
-	}()
-
-	// Initialize data structures for test
-	configFile.backupInfo = []map[string]string {
-		{"name": "b2", "threads": "5", "vss": "false"},
-		{"name": "azure-direct", "threads": "10", "vss": "false"},
-	}
-	configFile.copyInfo = nil
-	mailBody = nil
-	//defer os.Remove(file.Name())
-
-	execCommand = fakeBackupOpsCommand
-	defer func(){ execCommand = exec.Command }()
-	if err := performDuplicacyBackup(logger, []string {"testbackup", "taltos.log"}); err != nil {
-		t.Errorf("expected nil error, got %v", err)
+	tests := []struct {
+		assetInputFragment string
+		resultsFile        string
+		backupInfo         []map[string]string
+		copyInfo           []map[string]string
+	}{
+		{"taltos.log", "taltos.log_results_backup",
+			[]map[string]string{
+				{"name": "gcd", "threads": "5", "vss": "false"},
+				{"name": "azure-direct", "threads": "10", "vss": "false"},
+			},
+			[]map[string]string{
+				{"from": "gcd", "to": "azure", "threads": "5"},
+			},
+		},
+		{
+			"storagepw.log", "storagepw.log_results_backup",
+			[]map[string]string{
+				{"name": "b2", "threads": "5", "vss": "false"},
+			},
+			[]map[string]string{ },
+		},
 	}
 
-	// Check results of anon function
-	resultsFile := "test/assets/taltos.log_results_backup"
-	expectedOutputInBytes, err := ioutil.ReadFile(resultsFile)
-	if err != nil {
-		t.Errorf("unable to read backup results file%s", err)
-		return
+	for _, test := range tests {
+		// Set up logging infrastructure
+		logger, file, err := setupLogging()
+		if err != nil {
+			t.Errorf("unexpected error creating log file, got %#v", err)
+		}
+		loggingSystemDisplayTime = false
+		quietFlag = true
+		defer func() {
+			file.Close()
+			os.Remove(file.Name()) // For debugging, might need to leave log file around for perusal
+
+			loggingSystemDisplayTime = true
+			quietFlag = false
+		}()
+
+		// Initialize data structures for test
+		configFile.backupInfo = test.backupInfo
+		configFile.copyInfo = test.copyInfo
+		mailBody = nil
+		//defer os.Remove(file.Name())
+
+		execCommand = fakeBackupOpsCommand
+		defer func() { execCommand = exec.Command }()
+		if err := performDuplicacyBackup(logger, []string{"testbackup", test.assetInputFragment}); err != nil {
+			t.Errorf("expected nil error, got %v", err)
+		}
+
+		// Check results of anon function
+		expectedOutputInBytes, err := ioutil.ReadFile(path.Join("test/assets", test.resultsFile))
+		if err != nil {
+			t.Errorf("unable to read backup results file %s", err)
+			return
+		}
+		expectedOutput := string(expectedOutputInBytes)
+		actualOutput := strings.Join(mailBody, "\n") + "\n"
+		if actualOutput != expectedOutput {
+			t.Errorf("result was incorrect, got\n=====\n%s=====\nexpected\n=====\n%s=====", actualOutput, expectedOutput)
+		}
 	}
-	expectedOutput := string(expectedOutputInBytes)
-	actualOutput := strings.Join(mailBody, "\n") + "\n"
-	if actualOutput != expectedOutput {
-		t.Errorf("result was incorrect, got\n=====\n%s=====\nexpected\n=====\n%s=====", actualOutput, expectedOutput)
-	}
+
+	/*
+		// Set up logging infrastructure
+		logger, file, err := setupLogging()
+		if err != nil {
+			t.Errorf("unexpected error creating log file, got %#v", err)
+		}
+		loggingSystemDisplayTime = false
+		quietFlag = true
+		defer func() {
+			file.Close()
+			os.Remove(file.Name())	// For debugging, might need to leave log file around for perusal
+
+			loggingSystemDisplayTime = true
+			quietFlag = false
+		}()
+
+		// Initialize data structures for test
+		configFile.backupInfo = []map[string]string {
+			{"name": "gcd", "threads": "5", "vss": "false"},
+			{"name": "azure-direct", "threads": "10", "vss": "false"},
+		}
+		configFile.copyInfo = nil
+		mailBody = nil
+		//defer os.Remove(file.Name())
+
+		execCommand = fakeBackupOpsCommand
+		defer func(){ execCommand = exec.Command }()
+		if err := performDuplicacyBackup(logger, []string {"testbackup", "taltos.log"}); err != nil {
+			t.Errorf("expected nil error, got %v", err)
+		}
+
+		// Check results of anon function
+		resultsFile := "test/assets/taltos.log_results_backup"
+		expectedOutputInBytes, err := ioutil.ReadFile(resultsFile)
+		if err != nil {
+			t.Errorf("unable to read backup results file%s", err)
+			return
+		}
+		expectedOutput := string(expectedOutputInBytes)
+		actualOutput := strings.Join(mailBody, "\n") + "\n"
+		if actualOutput != expectedOutput {
+			t.Errorf("result was incorrect, got\n=====\n%s=====\nexpected\n=====\n%s=====", actualOutput, expectedOutput)
+		}
+	*/
 }
 
 // Read a file, dumping to stdout. Helper function for TestBackupOpsHelperProcess
@@ -113,7 +180,7 @@ func readFileToStdout(logFile string) error {
 }
 
 // TestBackupOpsHelperProcess isn't a real test; it's a helper process for TestRunDuplicacy*
-func TestBackupOpsHelperProcess(t *testing.T){
+func TestBackupOpsHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}

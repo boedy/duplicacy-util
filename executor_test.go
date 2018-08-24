@@ -28,7 +28,7 @@ import (
 // sets up testing framework for os/exec calls.
 
 // Set up arguments for testing of os/exec calls
-func fakeExecCommand(command string, args...string) *exec.Cmd {
+func fakeExecCommand(command string, args ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestExecutorHelperProcess", "--", command}
 	cs = append(cs, args...)
 	cmd := exec.Command(os.Args[0], cs...)
@@ -39,23 +39,25 @@ func fakeExecCommand(command string, args...string) *exec.Cmd {
 // Simple test to just pick up and verify expected output
 func TestRunExecutor(t *testing.T) {
 	// Handling when processing output from generic "duplicacy" command
-	outputArray := []string {}
+	outputArray := []string{}
 	anon := func(s string) { outputArray = append(outputArray, s) }
 
 	execCommand = fakeExecCommand
-	defer func(){ execCommand = exec.Command }()
-	err := Executor(duplicacyPath, []string {"-some","-fake","-args"}, configFile.repoDir, anon)
+	defer func() { execCommand = exec.Command }()
+	err := Executor(duplicacyPath, []string{"-some", "-fake", "-args"}, configFile.repoDir, anon)
 	if err != nil {
 		t.Errorf("Expected nil error, got %#v", err)
 	}
 	// Check results of anon function
 	expectedOutput := "This is the expected\noutput\n"
 	actualOutput := strings.Join(outputArray, "\n") + "\n"
-	if actualOutput != expectedOutput { t.Errorf("result was incorrect, got '%s', expected '%s'.", actualOutput, expectedOutput) }
+	if actualOutput != expectedOutput {
+		t.Errorf("result was incorrect, got '%s', expected '%s'.", actualOutput, expectedOutput)
+	}
 }
 
 // TestExecutorHelperProcess isn't a real test; it's a helper process for TestRunExecutor*
-func TestExecutorHelperProcess(t *testing.T){
+func TestExecutorHelperProcess(t *testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}

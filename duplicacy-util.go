@@ -201,7 +201,7 @@ func processArguments() (int, bool) {
 	if testMail {
 		cmdConfig = "test"
 
-		backupTable = []backupRevision {
+		backupTable = []backupRevision{
 			backupRevision{
 				storage:          "b2",
 				chunkTotalCount:  "149",
@@ -230,10 +230,10 @@ func processArguments() (int, bool) {
 			},
 		}
 
-		copyTable = []copyRevision {
+		copyTable = []copyRevision{
 			copyRevision{
-				storageFrom:  "b2",
-				storageTo:    "azure-direct",
+				storageFrom:     "b2",
+				storageTo:       "azure-direct",
 				chunkTotalCount: "109",
 				chunkCopyCount:  "3",
 				chunkSkipCount:  "106",

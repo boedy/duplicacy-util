@@ -20,9 +20,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 )
 
 func performBackup() error {
@@ -47,21 +47,21 @@ func performBackup() error {
 
 	// Perform "duplicacy backup" if required
 	if cmdBackup {
-		if err := performDuplicacyBackup(logger, []string {}); err != nil {
+		if err := performDuplicacyBackup(logger, []string{}); err != nil {
 			return err
 		}
 	}
 
 	// Perform "duplicacy prune" if required
 	if cmdPrune {
-		if err := performDuplicacyPrune(logger, []string {}); err != nil {
+		if err := performDuplicacyPrune(logger, []string{}); err != nil {
 			return err
 		}
 	}
 
 	// Perform "duplicacy check" if required
 	if cmdCheck {
-		if err := performDuplicacyCheck(logger, []string {}); err != nil {
+		if err := performDuplicacyCheck(logger, []string{}); err != nil {
 			return err
 		}
 	}
@@ -113,7 +113,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 			}
 
 			// Try to catch and point out password problems within dupliacy
-		case strings.HasSuffix(line, "Authorization failure"):
+		case strings.HasPrefix(line, "Enter storage password:") || strings.HasSuffix(line, "Authorization failure"):
 			logMessage(logger, "  Error: Duplicacy appears to be prompting for a password")
 
 			logger.Println(line)
@@ -153,7 +153,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 		cmdArgs := make([]string, len(testArgs))
 		copy(cmdArgs, testArgs)
 		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
-			cmdArgs[1] = testArgs[1] + "_backup" + strconv.Itoa(i + 1)
+			cmdArgs[1] = testArgs[1] + "_backup" + strconv.Itoa(i+1)
 		}
 
 		// Build remainder of command arguments
@@ -181,6 +181,10 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 			return err
 		}
 		backupDuration := getTimeDiffString(backupStartTime, time.Now())
+		// For test, could do a regexp on results, but easier to force known duration here
+		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
+			backupDuration = getTimeDiffString(backupStartTime, backupStartTime)
+		}
 		logMessage(logger, fmt.Sprint("  Duration: ", backupDuration))
 
 		// Save data from backup for HTML table in E-Mail
@@ -197,7 +201,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 		cmdArgs := make([]string, len(testArgs))
 		copy(cmdArgs, testArgs)
 		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
-			cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i + 1)
+			cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i+1)
 		}
 
 		// Build remainder of command arguments
@@ -214,7 +218,11 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 			return err
 		}
 		copyDuration := getTimeDiffString(copyStartTime, time.Now())
-		logMessage(logger, fmt.Sprint("  Duration: ", getTimeDiffString(copyStartTime, time.Now())))
+		// For test, could do a regexp on results, but easier to force known duration here
+		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
+			copyDuration = getTimeDiffString(copyStartTime, copyStartTime)
+		}
+		logMessage(logger, fmt.Sprint("  Duration: ", copyDuration))
 
 		// Save data from backup for HTML table in E-Mail
 		copyEntry.storageFrom = copyInfo["from"]
