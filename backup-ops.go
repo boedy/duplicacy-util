@@ -189,40 +189,38 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 		backupTable = append(backupTable, backupEntry)
 	}
 
-	if len(configFile.copyInfo) != 0 {
-		for i, copyInfo := range configFile.copyInfo {
-			copyStartTime := time.Now()
-			logger.Println("######################################################################")
+	for i, copyInfo := range configFile.copyInfo {
+		copyStartTime := time.Now()
+		logger.Println("######################################################################")
 
-			// Minor support for unit tests - distasteful but only reasonable option
-			cmdArgs := make([]string, len(testArgs))
-			copy(cmdArgs, testArgs)
-			if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
-				cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i + 1)
-			}
-
-			// Build remainder of command arguments
-			cmdArgs = append(cmdArgs, "copy", "-threads", copyInfo["threads"],
-				"-from", copyInfo["from"], "-to", copyInfo["to"])
-			logMessage(logger, fmt.Sprint("Copying from storage ", copyInfo["from"],
-				" to storage ", copyInfo["to"], " with ", copyInfo["threads"], " threads"))
-			if debugFlag {
-				logMessage(logger, fmt.Sprint("Executing: ", duplicacyPath, cmdArgs))
-			}
-			err := Executor(duplicacyPath, cmdArgs, configFile.repoDir, copyLogger)
-			if err != nil {
-				logError(logger, fmt.Sprint("Error executing command: ", err))
-				return err
-			}
-			copyDuration := getTimeDiffString(copyStartTime, time.Now())
-			logMessage(logger, fmt.Sprint("  Duration: ", getTimeDiffString(copyStartTime, time.Now())))
-
-			// Save data from backup for HTML table in E-Mail
-			copyEntry.storageFrom = copyInfo["from"]
-			copyEntry.storageTo = copyInfo["to"]
-			copyEntry.duration = copyDuration
-			copyTable = append(copyTable, copyEntry)
+		// Minor support for unit tests - distasteful but only reasonable option
+		cmdArgs := make([]string, len(testArgs))
+		copy(cmdArgs, testArgs)
+		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
+			cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i + 1)
 		}
+
+		// Build remainder of command arguments
+		cmdArgs = append(cmdArgs, "copy", "-threads", copyInfo["threads"],
+			"-from", copyInfo["from"], "-to", copyInfo["to"])
+		logMessage(logger, fmt.Sprint("Copying from storage ", copyInfo["from"],
+			" to storage ", copyInfo["to"], " with ", copyInfo["threads"], " threads"))
+		if debugFlag {
+			logMessage(logger, fmt.Sprint("Executing: ", duplicacyPath, cmdArgs))
+		}
+		err := Executor(duplicacyPath, cmdArgs, configFile.repoDir, copyLogger)
+		if err != nil {
+			logError(logger, fmt.Sprint("Error executing command: ", err))
+			return err
+		}
+		copyDuration := getTimeDiffString(copyStartTime, time.Now())
+		logMessage(logger, fmt.Sprint("  Duration: ", getTimeDiffString(copyStartTime, time.Now())))
+
+		// Save data from backup for HTML table in E-Mail
+		copyEntry.storageFrom = copyInfo["from"]
+		copyEntry.storageTo = copyInfo["to"]
+		copyEntry.duration = copyDuration
+		copyTable = append(copyTable, copyEntry)
 	}
 
 	return nil
