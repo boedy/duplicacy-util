@@ -152,7 +152,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 		// Minor support for unit tests - distasteful but only reasonable option
 		cmdArgs := make([]string, len(testArgs))
 		copy(cmdArgs, testArgs)
-		if cmdArgs[0] == "testbackup" {
+		if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
 			cmdArgs[1] = testArgs[1] + "_backup" + strconv.Itoa(i + 1)
 		}
 
@@ -197,7 +197,7 @@ func performDuplicacyBackup(logger *log.Logger, testArgs []string) error {
 			// Minor support for unit tests - distasteful but only reasonable option
 			cmdArgs := make([]string, len(testArgs))
 			copy(cmdArgs, testArgs)
-			if cmdArgs[0] == "testbackup" {
+			if len(cmdArgs) > 0 && cmdArgs[0] == "testbackup" {
 				cmdArgs[1] = testArgs[1] + "_copy" + strconv.Itoa(i + 1)
 			}
 
